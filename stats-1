@@ -1,0 +1,117 @@
+#!/bin/bash
+
+#****************************************************************************************
+# Author: Sarah Harber
+# Date Last Updated: 07/10/17
+# Program that will read in a test file & compute the average and median by either row 
+# or by column which will be specified by the script prompt.  
+#****************************************************************************************
+
+#****************************************************************************************
+# Determine if the user specified a file, if there is not a file. 
+# If the user did not specify a file then allow user to input file
+#***************************************************************************************    
+	# Create Temp File
+	tempinput="tempinput$$"
+
+# Trap statement to remove all temp files.
+   trap "rm -f "tempinput$$" ; exit 1" INT HUP TERM
+
+        # If there is less than 1 or greater than 2 arguments then show error.
+        if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]
+                then
+                        echo "$0 {-rows|-cols} [file]" 1>&2 #Send to stderr
+                        exit 1 # Exit Program
+        fi
+        #If there is only one parameter then use stdin for input
+        if [[ "$#" -eq 1 ]];
+                then
+                        #Read in file & store in the temp file
+                        cat > "$tempinput"
+        else #if there are 2 arguments
+                cp "$2" "$tempinput" # Copy file into temp file.
+                if test -r $tempinput # Check to see if input file is readable
+                        then
+                                true
+                else # If file is not readable
+                        echo "$0: cannot read file $2" 1>&2 #Out put error to stderr
+                        exit 1 #Exit with error code 1
+                fi
+        fi
+
+#****************************************************************************************
+# Calculate Average & Median BY Rows & output the results
+#****************************************************************************************
+    Rows()
+    {
+     
+     echo "Average Median"
+     	# Read each line
+        while read myLine
+        do
+            #Initiate & Reset variables
+            count=0
+            sum=0
+            average=0
+
+            #loop to get sum & count
+            for i in $myLine
+            do
+                count=$(( count + 1 ))
+                sum=$(( sum + i ))
+            done
+
+            #Calculate the average
+            average=$(( count / 2 ))
+            average=$(( sum + average ))
+            average=$(( average / count ))
+
+            #Sort Line
+            sortedLine=$( echo $myLine | tr " " "\n" | sort -g )
+            #Calculate half count
+            halfCount=$(( ( count / 2 ) + 1 ))
+            counter=1
+            #Find the Median by looping through the line
+            for j in $sortedLine
+            do
+                currentNum=$j
+                if [ "$counter" -le "$halfCount" ]
+                then
+                    median=$currentNum
+                    counter=$(( counter + 1 ))
+                fi
+            done
+            #Print the Average & Median of the Lines
+            echo -e "$average\t$median"
+
+        done < $tempinput
+    rm "tempinput$$"
+    }
+
+Columns()
+{
+	numCols=$( head -n 1 $tempinput | wc -w )
+
+	currCol=1
+
+}
+#***********************************************************************************
+# Make Calls to the Functions Based on User Input
+#****************************************************************************************
+
+
+    # Call row function
+    if [[ "$1" == -r* ]]
+        then                
+            Rows
+    elif [[ "$1" == -c* ]]
+        then                
+            Columns
+    else
+       echo "$0 {-rows|-cols} [input_file]" 1>&2
+        exit 1
+    fi
+
+
+rm -f "tempinput$$"
+exit 0
